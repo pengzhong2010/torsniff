@@ -9,6 +9,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	// "reflect"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +39,28 @@ type torrent struct {
 	name        string
 	length      int64
 	files       []*tfile
+}
+
+type torrentJsonLine struct {
+	Link string `json:"link"`
+	Name string `json:"name"`
+	Size int64  `json:"size"`
+	File int    `json:"file"`
+}
+
+func (t *torrent) JsonLine() string {
+	tj := torrentJsonLine{
+		Link: fmt.Sprintf("magnet:?xt=urn:btih:%s", t.infohashHex),
+		Name: t.name,
+		Size: t.length,
+		File: len(t.files),
+	}
+
+	b, err := json.Marshal(tj)
+	if err != nil {
+		log.Println("JSON ERR:", err)
+	}
+	return string(b)
 }
 
 func (t *torrent) String() string {
@@ -127,7 +151,7 @@ func (t *torsniff) run() error {
 
 	dht.run()
 
-	log.Println("running, it may take a few minutes...")
+	// log.Println("running, it may take a few minutes...")
 
 	for {
 		select {
@@ -170,16 +194,18 @@ func (t *torsniff) work(ac *announcement, tokens chan struct{}) {
 		return
 	}
 
-	if err := t.saveTorrent(ac.infohashHex, meta); err != nil {
-		return
-	}
+	// if err := t.saveTorrent(ac.infohashHex, meta); err != nil {
+	// 	return
+	// }
 
 	torrent, err := parseTorrent(meta, ac.infohashHex)
 	if err != nil {
 		return
 	}
 
-	log.Println(torrent)
+	// log.Println(torrent)
+	log.Println(torrent.JsonLine())
+
 }
 
 func (t *torsniff) isTorrentExist(infohashHex string) bool {
